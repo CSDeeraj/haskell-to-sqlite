@@ -1,0 +1,27 @@
+{
+    "name": "Haskell Flood Susceptibility Modeling",
+    "image": "haskell:9.6",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {}
+    },
+    "forwardPorts": [3000],
+    "portsAttributes": {
+        "3000": {
+            "label": "Flood Model Server",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "postCreateCommand": "apt-get update && apt-get install -y sqlite3 libsqlite3-dev && cabal update && cabal build",
+    "postStartCommand": "cabal run flood-susceptibility",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "haskell.haskell",
+                "justusadam.language-haskell"
+            ],
+            "settings": {
+                "haskell.manageHLS": "GHCup"
+            }
+        }
+    }
+}
