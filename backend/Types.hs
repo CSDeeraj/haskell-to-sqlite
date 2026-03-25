@@ -2,145 +2,199 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Types
-    ( FloodRisk(..)
-    , Basin(..)
-    , RainfallScenario(..)
-    , FloodResult(..)
-    , CalculateRiskRequest(..)
-    , UploadRainfallRequest(..)
+    ( RiskLevel(..)
+    , PrecipScenario(..)
+    , SubBasin(..)
+    , PrecipScenarioData(..)
+    , RiskResult(..)
+    , ClassifyRequest(..)
+    , ClassifyAllRequest(..)
+    , riskToText
+    , textToRisk
+    , precipToText
+    , textToPrecip
     ) where
 
 import           Data.Aeson            (FromJSON (..), ToJSON (..), object,
                                         withText, (.=))
 import           Data.Text             (Text)
-import           Database.SQLite.Simple (FromRow (..), ToRow (..), field)
+import           Database.SQLite.Simple (FromRow (..), ToRow (..), field, SQLData)
+import           Database.SQLite.Simple.ToField (toField)
 import           GHC.Generics          (Generic)
 
 -- ============================================================
--- Algebraic Data Type: FloodRisk
--- This is the core ADT representing flood susceptibility levels.
--- Uses sum type (four distinct constructors) for risk categories.
+-- Algebraic Data Type: RiskLevel (Sum Type)
+--
+-- Four exhaustive constructors for flood susceptibility.
+-- Compiler enforces total pattern matching.
 -- ============================================================
 
-data FloodRisk
-    = Low       -- ^ Minimal flood danger
-    | Moderate  -- ^ Some flood potential, monitoring advised
-    | High      -- ^ Significant flood risk, action recommended
-    | Severe    -- ^ Critical flood danger, immediate action required
+data RiskLevel
+    = Low       -- ^ SI < 0.25: Minimal flood danger
+    | Moderate  -- ^ 0.25 ≤ SI < 0.50: Monitor water levels
+    | High      -- ^ 0.50 ≤ SI < 0.75: Prepare flood defenses
+    | Severe    -- ^ SI ≥ 0.75: Immediate action required
     deriving (Show, Eq, Ord, Generic)
 
--- Custom JSON instances for FloodRisk ADT
-instance ToJSON FloodRisk where
+instance ToJSON RiskLevel where
     toJSON Low      = "Low"
     toJSON Moderate = "Moderate"
     toJSON High     = "High"
     toJSON Severe   = "Severe"
 
-instance FromJSON FloodRisk where
-    parseJSON = withText "FloodRisk" $ \t ->
+instance FromJSON RiskLevel where
+    parseJSON = withText "RiskLevel" $ \t ->
         case t of
             "Low"      -> pure Low
             "Moderate" -> pure Moderate
             "High"     -> pure High
             "Severe"   -> pure Severe
-            _          -> fail "Invalid FloodRisk value"
+            _          -> fail "Invalid RiskLevel value"
 
--- Convert FloodRisk to Text for database storage
-riskToText :: FloodRisk -> Text
+riskToText :: RiskLevel -> Text
 riskToText Low      = "Low"
 riskToText Moderate = "Moderate"
 riskToText High     = "High"
 riskToText Severe   = "Severe"
 
--- Convert Text from database to FloodRisk using pattern matching
-textToRisk :: Text -> FloodRisk
+textToRisk :: Text -> RiskLevel
 textToRisk "Low"      = Low
 textToRisk "Moderate" = Moderate
 textToRisk "High"     = High
 textToRisk "Severe"   = Severe
-textToRisk _          = Low  -- default fallback
+textToRisk _          = Low
 
 -- ============================================================
--- Basin: Represents an urban sub-basin with geographic properties
+-- Algebraic Data Type: PrecipScenario (Sum Type)
+--
+-- Five exhaustive precipitation scenario levels based on
+-- IMD categories and return period analysis.
 -- ============================================================
 
-data Basin = Basin
-    { basinId    :: Int
-    , basinName  :: Text
-    , elevation  :: Double   -- ^ Meters above sea level
-    , slope      :: Double   -- ^ Percentage gradient
-    , area       :: Double   -- ^ Square kilometers
+data PrecipScenario
+    = Normal          -- ^ 10–20 mm/hr, 1-year return period
+    | ModerateStorm   -- ^ 30–50 mm/hr, 2-year return period
+    | HeavyStorm      -- ^ 60–90 mm/hr, 10-year return period
+    | ExtremeEvent    -- ^ 100–150 mm/hr, 50-year (Chennai 2015 / Mumbai 2005)
+    | Catastrophic    -- ^ 150+ mm/hr, 100-year climate change scenario
+    deriving (Show, Eq, Ord, Generic)
+
+instance ToJSON PrecipScenario
+instance FromJSON PrecipScenario
+
+precipToText :: PrecipScenario -> Text
+precipToText Normal        = "Normal"
+precipToText ModerateStorm = "ModerateStorm"
+precipToText HeavyStorm    = "HeavyStorm"
+precipToText ExtremeEvent  = "ExtremeEvent"
+precipToText Catastrophic  = "Catastrophic"
+
+textToPrecip :: Text -> PrecipScenario
+textToPrecip "Normal"        = Normal
+textToPrecip "ModerateStorm" = ModerateStorm
+textToPrecip "HeavyStorm"    = HeavyStorm
+textToPrecip "ExtremeEvent"  = ExtremeEvent
+textToPrecip "Catastrophic"  = Catastrophic
+textToPrecip _               = Normal
+
+-- ============================================================
+-- SubBasin: Urban sub-basin with full hydrology parameters
+-- ============================================================
+
+data SubBasin = SubBasin
+    { basinId         :: Int
+    , basinName       :: Text
+    , city            :: Text
+    , country         :: Text
+    , elevation       :: Double   -- ^ Meters above sea level (mean)
+    , slope           :: Double   -- ^ Percentage gradient
+    , area            :: Double   -- ^ Square kilometers
+    , drainageDensity :: Double   -- ^ km/km² (stream length per unit area)
+    , imperviousRatio :: Double   -- ^ 0.0–1.0 (impervious surface ratio)
+    , runoffCoeff     :: Double   -- ^ 0.0–1.0 (Rational Method C)
+    , manningsN       :: Double   -- ^ Manning's roughness coefficient
+    , timeOfConc      :: Double   -- ^ Time of concentration (minutes)
     } deriving (Show, Eq, Generic)
 
-instance ToJSON Basin
-instance FromJSON Basin
+instance ToJSON SubBasin
+instance FromJSON SubBasin
 
-instance FromRow Basin where
-    fromRow = Basin <$> field <*> field <*> field <*> field <*> field
+instance FromRow SubBasin where
+    fromRow = SubBasin <$> field <*> field <*> field <*> field
+                       <*> field <*> field <*> field <*> field
+                       <*> field <*> field <*> field <*> field
 
-instance ToRow Basin where
-    toRow b = toRow (basinName b, elevation b, slope b, area b)
+instance ToRow SubBasin where
+    toRow b = [ toField (basinName b), toField (city b), toField (country b)
+              , toField (elevation b), toField (slope b), toField (area b)
+              , toField (drainageDensity b), toField (imperviousRatio b)
+              , toField (runoffCoeff b), toField (manningsN b), toField (timeOfConc b) ]
 
 -- ============================================================
--- RainfallScenario: Precipitation data for a given basin
+-- PrecipScenarioData: Named precipitation scenario record
 -- ============================================================
 
-data RainfallScenario = RainfallScenario
-    { scenarioId    :: Int
-    , rsBasinId     :: Int
-    , scenarioName  :: Text
-    , intensityMm   :: Double   -- ^ Millimeters per hour
-    , durationHours :: Double
+data PrecipScenarioData = PrecipScenarioData
+    { scenarioId     :: Int
+    , scenarioType   :: Text      -- ^ "Normal", "ModerateStorm", etc.
+    , scenarioName   :: Text      -- ^ Human-readable name
+    , intensityMm    :: Double    -- ^ mm/hr
+    , returnPeriod   :: Int       -- ^ Return period in years
+    , durationHours  :: Double    -- ^ Duration in hours
+    , reference      :: Text      -- ^ Academic reference
     } deriving (Show, Eq, Generic)
 
-instance ToJSON RainfallScenario
-instance FromJSON RainfallScenario
+instance ToJSON PrecipScenarioData
+instance FromJSON PrecipScenarioData
 
-instance FromRow RainfallScenario where
-    fromRow = RainfallScenario <$> field <*> field <*> field <*> field <*> field
+instance FromRow PrecipScenarioData where
+    fromRow = PrecipScenarioData <$> field <*> field <*> field
+                                 <*> field <*> field <*> field <*> field
 
-instance ToRow RainfallScenario where
-    toRow r = toRow (rsBasinId r, scenarioName r, intensityMm r, durationHours r)
+instance ToRow PrecipScenarioData where
+    toRow s = toRow ( scenarioType s, scenarioName s, intensityMm s
+                    , returnPeriod s, durationHours s, reference s )
 
 -- ============================================================
--- FloodResult: Computed flood risk result stored in database
+-- RiskResult: Computed flood risk with SI score
 -- ============================================================
 
-data FloodResult = FloodResult
-    { resultId     :: Int
-    , frBasinId    :: Int
-    , frRainfallId :: Int
-    , riskLevel    :: Text     -- ^ Stored as text, converted to FloodRisk when needed
-    , calculatedAt :: Text     -- ^ ISO 8601 timestamp
+data RiskResult = RiskResult
+    { resultId       :: Int
+    , rrBasinId      :: Int
+    , rrScenarioId   :: Int
+    , siScore        :: Double    -- ^ Susceptibility Index 0.0–1.0
+    , riskLevel      :: Text     -- ^ "Low", "Moderate", "High", "Severe"
+    , sensitivity    :: Text     -- ^ JSON: parameter sensitivities
+    , calculatedAt   :: Text     -- ^ ISO 8601 timestamp
     } deriving (Show, Eq, Generic)
 
-instance ToJSON FloodResult
-instance FromJSON FloodResult
+instance ToJSON RiskResult
+instance FromJSON RiskResult
 
-instance FromRow FloodResult where
-    fromRow = FloodResult <$> field <*> field <*> field <*> field <*> field
+instance FromRow RiskResult where
+    fromRow = RiskResult <$> field <*> field <*> field
+                         <*> field <*> field <*> field <*> field
 
-instance ToRow FloodResult where
-    toRow r = toRow (frBasinId r, frRainfallId r, riskLevel r, calculatedAt r)
+instance ToRow RiskResult where
+    toRow r = toRow ( rrBasinId r, rrScenarioId r, siScore r
+                    , riskLevel r, sensitivity r, calculatedAt r )
 
 -- ============================================================
 -- API Request types
 -- ============================================================
 
-data CalculateRiskRequest = CalculateRiskRequest
+data ClassifyRequest = ClassifyRequest
     { crBasinId    :: Int
-    , crRainfallId :: Int
+    , crScenarioId :: Int
     } deriving (Show, Eq, Generic)
 
-instance FromJSON CalculateRiskRequest
-instance ToJSON CalculateRiskRequest
+instance FromJSON ClassifyRequest
+instance ToJSON ClassifyRequest
 
-data UploadRainfallRequest = UploadRainfallRequest
-    { urBasinId       :: Int
-    , urScenarioName  :: Text
-    , urIntensityMm   :: Double
-    , urDurationHours :: Double
+data ClassifyAllRequest = ClassifyAllRequest
+    { carBasinId :: Int
     } deriving (Show, Eq, Generic)
 
-instance FromJSON UploadRainfallRequest
-instance ToJSON UploadRainfallRequest
+instance FromJSON ClassifyAllRequest
+instance ToJSON ClassifyAllRequest

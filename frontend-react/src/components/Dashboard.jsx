@@ -1,100 +1,68 @@
 import { useEffect, useState } from 'react';
 import {
-    Chart as ChartJS,
-    ArcElement,
-    BarElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend,
+    Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend,
 } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-const RISK_COLORS = {
-    Low: '#22c55e',
-    Moderate: '#f59e0b',
-    High: '#f97316',
-    Severe: '#ef4444',
-};
+const RISK_COLORS = { Low: '#22c55e', Moderate: '#eab308', High: '#f97316', Severe: '#dc2626' };
 
-export default function Dashboard({ basins, rainfall, results }) {
+export default function Dashboard({ basins, scenarios, results, matrix }) {
     const [animate, setAnimate] = useState(false);
     useEffect(() => { setAnimate(true); }, []);
 
-    // Risk distribution
+    // Compute risk from matrix if available
     const riskCounts = { Low: 0, Moderate: 0, High: 0, Severe: 0 };
-    results.forEach((r) => {
-        if (riskCounts[r.riskLevel] !== undefined) riskCounts[r.riskLevel]++;
-    });
+    if (matrix && matrix.length > 0) {
+        matrix.forEach(basin => {
+            if (basin.scenarios) {
+                basin.scenarios.forEach(s => {
+                    if (riskCounts[s.riskLevel] !== undefined) riskCounts[s.riskLevel]++;
+                });
+            }
+        });
+    } else {
+        results.forEach(r => {
+            if (riskCounts[r.riskLevel] !== undefined) riskCounts[r.riskLevel]++;
+        });
+    }
+
+    const totalAssessments = Object.values(riskCounts).reduce((a, b) => a + b, 0);
+    const dominantRisk = Object.entries(riskCounts).reduce((a, b) => b[1] > a[1] ? b : a, ['None', 0]);
 
     const doughnutData = {
         labels: ['Low', 'Moderate', 'High', 'Severe'],
         datasets: [{
             data: [riskCounts.Low, riskCounts.Moderate, riskCounts.High, riskCounts.Severe],
-            backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'],
-            borderColor: 'transparent',
-            borderWidth: 0,
-            hoverOffset: 8,
+            backgroundColor: ['#22c55e', '#eab308', '#f97316', '#dc2626'],
+            borderColor: 'transparent', borderWidth: 0, hoverOffset: 8,
         }],
     };
-
     const doughnutOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: { color: '#94a3b8', font: { family: 'Inter', size: 11, weight: 600 }, padding: 16, usePointStyle: true, pointStyleWidth: 8 },
-            },
-        },
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter', size: 11, weight: 600 }, padding: 16, usePointStyle: true, pointStyleWidth: 8 } } },
     };
 
-    // Basins comparison chart
     const basinBarData = {
-        labels: basins.map((b) => b.basinName),
+        labels: basins.map(b => b.basinName),
         datasets: [
-            {
-                label: 'Elevation (m)',
-                data: basins.map((b) => b.elevation),
-                backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                borderColor: '#3b82f6',
-                borderWidth: 1,
-                borderRadius: 4,
-            },
-            {
-                label: 'Slope (%)',
-                data: basins.map((b) => b.slope),
-                backgroundColor: 'rgba(6, 182, 212, 0.6)',
-                borderColor: '#06b6d4',
-                borderWidth: 1,
-                borderRadius: 4,
-            },
+            { label: 'ISR', data: basins.map(b => b.imperviousRatio * 100), backgroundColor: 'rgba(6,182,212,0.6)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 },
+            { label: 'Slope (%)', data: basins.map(b => b.slope), backgroundColor: 'rgba(14,165,233,0.6)', borderColor: '#0ea5e9', borderWidth: 1, borderRadius: 4 },
+            { label: 'Runoff C', data: basins.map(b => b.runoffCoeff * 100), backgroundColor: 'rgba(20,184,166,0.6)', borderColor: '#14b8a6', borderWidth: 1, borderRadius: 4 },
         ],
     };
-
     const barOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                labels: { color: '#94a3b8', font: { family: 'Inter', size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8 },
-            },
-        },
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8 } } },
         scales: {
-            x: { ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-            y: { ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            x: { ticks: { color: '#64748b', font: { family: 'Inter', size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(6,182,212,0.04)' } },
+            y: { ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }, grid: { color: 'rgba(6,182,212,0.04)' } },
         },
     };
-
-    // Determine dominant risk
-    const dominantRisk = Object.entries(riskCounts).reduce((a, b) => (b[1] > a[1] ? b : a), ['None', 0]);
 
     return (
         <div className="tab-content">
-            {/* Stats cards */}
             <div className="stats-bar">
                 <div className="stat-card">
                     <span className="stat-icon">🏘️</span>
@@ -103,12 +71,12 @@ export default function Dashboard({ basins, rainfall, results }) {
                 </div>
                 <div className="stat-card">
                     <span className="stat-icon">🌧️</span>
-                    <span className="stat-number">{rainfall.length}</span>
-                    <span className="stat-label">Rainfall Scenarios</span>
+                    <span className="stat-number">{scenarios.length}</span>
+                    <span className="stat-label">Scenarios</span>
                 </div>
                 <div className="stat-card">
                     <span className="stat-icon">📊</span>
-                    <span className="stat-number">{results.length}</span>
+                    <span className="stat-number">{totalAssessments}</span>
                     <span className="stat-label">Risk Assessments</span>
                 </div>
                 <div className="stat-card">
@@ -120,75 +88,68 @@ export default function Dashboard({ basins, rainfall, results }) {
                 </div>
             </div>
 
-            {/* Charts row */}
             <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
                 <div className="panel">
-                    <div className="panel-header">
-                        <h2>🎯 Risk Distribution</h2>
-                    </div>
+                    <div className="panel-header"><h2>🎯 Risk Distribution (All Basins × Scenarios)</h2></div>
                     <div className="panel-body">
-                        {results.length > 0 ? (
+                        {totalAssessments > 0 ? (
                             <div className="chart-container" style={{ height: '280px' }}>
                                 <Doughnut data={doughnutData} options={doughnutOptions} />
                             </div>
                         ) : (
-                            <div className="empty-state">Calculate risks to see distribution</div>
+                            <div className="empty-state">No risk data yet</div>
                         )}
                     </div>
                 </div>
-
                 <div className="panel">
-                    <div className="panel-header">
-                        <h2>🏔️ Basin Terrain Comparison</h2>
-                    </div>
+                    <div className="panel-header"><h2>🏔️ Basin Parameters Comparison</h2></div>
                     <div className="panel-body">
                         {basins.length > 0 ? (
                             <div className="chart-container" style={{ height: '280px' }}>
                                 <Bar data={basinBarData} options={barOptions} />
                             </div>
                         ) : (
-                            <div className="empty-state">No basin data available</div>
+                            <div className="empty-state">No basin data</div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Info section */}
             <div className="panel">
-                <div className="panel-header">
-                    <h2>🧮 How It Works: ADTs & Pattern Matching</h2>
-                </div>
+                <div className="panel-header"><h2>🧮 Methodology: SI Formula & ADTs</h2></div>
                 <div className="panel-body">
                     <div className="info-grid">
                         <div className="info-card">
+                            <h3>Susceptibility Index (SI)</h3>
+                            <p>Weighted multi-criteria formula with AHP-derived weights:</p>
+                            <pre><code>{`SI = 0.35×R + 0.15×(1/S) + 0.15×(1/E)
+   + 0.20×ISR + 0.15×(1/Dd)
+
+All inputs min-max normalized to [0,1]`}</code></pre>
+                        </div>
+                        <div className="info-card">
                             <h3>Algebraic Data Types</h3>
-                            <p>Flood risk is modeled as a <strong>sum type</strong> in Haskell:</p>
-                            <pre><code>data FloodRisk = Low | Moderate | High | Severe</code></pre>
-                            <p>This ensures only valid risk categories exist in the system.</p>
+                            <pre><code>{`data RiskLevel = Low | Moderate | High | Severe
+data PrecipScenario = Normal | ModerateStorm
+    | HeavyStorm | ExtremeEvent | Catastrophic
+
+classifyRisk :: SubBasin -> PrecipScenario -> RiskLevel`}</code></pre>
                         </div>
                         <div className="info-card">
-                            <h3>Pattern Matching</h3>
-                            <p>Risk classification uses <strong>guard-based pattern matching</strong>:</p>
-                            <pre><code>{`classifyFloodRisk rainfall elev slope
-  | rainfall >= 100 && elev < 50  = Severe
-  | rainfall >= 80  && elev < 100 = High
-  | rainfall >= 40  && elev < 200 = Moderate
-  | otherwise                     = Low`}</code></pre>
-                        </div>
-                        <div className="info-card">
-                            <h3>Datasets Used</h3>
+                            <h3>Theoretical Foundations</h3>
                             <ul>
-                                <li><strong>IMD Rainfall</strong> – Indian Meteorological Department precipitation categories</li>
-                                <li><strong>NASA SRTM</strong> – Shuttle Radar Topography Mission elevation data</li>
+                                <li><strong>Rational Method</strong> — Q = CiA (peak discharge)</li>
+                                <li><strong>SCS-CN Method</strong> — curve number runoff model</li>
+                                <li><strong>AHP</strong> — weight derivation for multi-criteria</li>
                             </ul>
                         </div>
-                        <div className="info-card risk-legend">
-                            <h3>Risk Level Legend</h3>
-                            <div className="legend-items">
-                                <span className="risk-badge risk-low">🟢 Low</span>
-                                <span className="risk-badge risk-moderate">🟡 Moderate</span>
-                                <span className="risk-badge risk-high">🟠 High</span>
-                                <span className="risk-badge risk-severe">🔴 Severe</span>
+                        <div className="info-card">
+                            <h3>Risk Level Classification</h3>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', marginTop: '.4rem' }}>
+                                <span className="risk-badge risk-low">SI &lt; 0.25 Low</span>
+                                <span className="risk-badge risk-moderate">0.25–0.50 Moderate</span>
+                                <span className="risk-badge risk-high">0.50–0.75 High</span>
+                                <span className="risk-badge risk-severe">≥ 0.75 Severe</span>
                             </div>
                         </div>
                     </div>

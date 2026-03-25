@@ -9,8 +9,8 @@ export async function fetchBasins() {
     return res.json();
 }
 
-export async function fetchRainfall() {
-    const res = await fetch(`${API_BASE}/api/rainfall`);
+export async function fetchScenarios() {
+    const res = await fetch(`${API_BASE}/api/scenarios`);
     return res.json();
 }
 
@@ -19,8 +19,8 @@ export async function fetchResults() {
     return res.json();
 }
 
-export async function uploadRainfall(data) {
-    const res = await fetch(`${API_BASE}/api/upload-rainfall`, {
+export async function classifyRisk(data) {
+    const res = await fetch(`${API_BASE}/api/classify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -28,11 +28,21 @@ export async function uploadRainfall(data) {
     return res.json();
 }
 
-export async function calculateRisk(data) {
-    const res = await fetch(`${API_BASE}/api/calculate-risk`, {
+export async function classifyAll(data) {
+    const res = await fetch(`${API_BASE}/api/classify-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
+    return res.json();
+}
+
+export async function fetchScenarioMatrix() {
+    const res = await fetch(`${API_BASE}/api/scenario-matrix`);
+    return res.json();
+}
+
+export async function fetchBasinCoordinates() {
+    const res = await fetch(`${API_BASE}/api/basin-coordinates`);
     return res.json();
 }

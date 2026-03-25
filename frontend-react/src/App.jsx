@@ -1,37 +1,44 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchBasins, fetchRainfall, fetchResults } from './api';
+import { fetchBasins, fetchScenarios, fetchResults, fetchScenarioMatrix } from './api';
 import Dashboard from './components/Dashboard';
-import BasinsPanel from './components/BasinsPanel';
-import RainfallPanel from './components/RainfallPanel';
-import RiskCalculator from './components/RiskCalculator';
+import FloodMap from './components/FloodMap';
+import ScenarioSelector from './components/ScenarioSelector';
+import BasinComparison from './components/BasinComparison';
+import SensitivityPanel from './components/SensitivityPanel';
+import ScenarioMatrix from './components/ScenarioMatrix';
 import ResultsPanel from './components/ResultsPanel';
 import './index.css';
 
 const TABS = [
-    { key: 'dashboard', label: 'Dashboard', icon: '🏠' },
-    { key: 'basins', label: 'Basins', icon: '🏘️' },
-    { key: 'rainfall', label: 'Rainfall', icon: '🌧️' },
-    { key: 'calculator', label: 'Risk Calculator', icon: '⚡' },
-    { key: 'results', label: 'Results', icon: '📊' },
+    { key: 'dashboard', label: 'Dashboard', icon: '🌊' },
+    { key: 'map', label: 'Flood Map', icon: '🗺️' },
+    { key: 'scenario', label: 'Scenario Selector', icon: '⚡' },
+    { key: 'comparison', label: 'Basin Comparison', icon: '⚖️' },
+    { key: 'sensitivity', label: 'Sensitivity', icon: '📊' },
+    { key: 'matrix', label: 'Scenario Matrix', icon: '📋' },
+    { key: 'results', label: 'Results', icon: '🔬' },
 ];
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [basins, setBasins] = useState([]);
-    const [rainfall, setRainfall] = useState([]);
+    const [scenarios, setScenarios] = useState([]);
     const [results, setResults] = useState([]);
+    const [matrix, setMatrix] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const loadAll = useCallback(async () => {
         try {
-            const [b, r, res] = await Promise.all([
+            const [b, s, res, m] = await Promise.all([
                 fetchBasins(),
-                fetchRainfall(),
+                fetchScenarios(),
                 fetchResults(),
+                fetchScenarioMatrix(),
             ]);
             setBasins(b);
-            setRainfall(r);
+            setScenarios(s);
             setResults(res);
+            setMatrix(m);
         } catch (err) {
             console.error('Failed to load data:', err);
         } finally {
@@ -41,13 +48,10 @@ export default function App() {
 
     useEffect(() => { loadAll(); }, [loadAll]);
 
-    const handleDataChange = useCallback(() => {
-        loadAll();
-    }, [loadAll]);
+    const handleDataChange = useCallback(() => { loadAll(); }, [loadAll]);
 
     return (
         <>
-            {/* Header */}
             <header className="header">
                 <div className="header-content">
                     <div className="logo">
@@ -62,7 +66,7 @@ export default function App() {
                             <span className="badge-dot"></span>
                             Haskell + SQLite
                         </div>
-                        <div className="header-badge" style={{ borderColor: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.08)' }}>
+                        <div className="header-badge" style={{ borderColor: 'rgba(20,184,166,0.2)', color: '#14b8a6', background: 'rgba(20,184,166,0.08)' }}>
                             React.js
                         </div>
                     </div>
@@ -70,7 +74,6 @@ export default function App() {
             </header>
 
             <main className="container">
-                {/* Tab Navigation */}
                 <nav className="tab-nav">
                     {TABS.map((tab) => (
                         <button
@@ -84,7 +87,6 @@ export default function App() {
                     ))}
                 </nav>
 
-                {/* Loading state */}
                 {loading ? (
                     <div className="loading-spinner">
                         <div className="spinner"></div>
@@ -92,16 +94,22 @@ export default function App() {
                 ) : (
                     <>
                         {activeTab === 'dashboard' && (
-                            <Dashboard basins={basins} rainfall={rainfall} results={results} />
+                            <Dashboard basins={basins} scenarios={scenarios} results={results} matrix={matrix} />
                         )}
-                        {activeTab === 'basins' && (
-                            <BasinsPanel basins={basins} onRefresh={() => fetchBasins().then(setBasins)} />
+                        {activeTab === 'map' && (
+                            <FloodMap matrix={matrix} />
                         )}
-                        {activeTab === 'rainfall' && (
-                            <RainfallPanel rainfall={rainfall} onRefresh={() => fetchRainfall().then(setRainfall)} />
+                        {activeTab === 'scenario' && (
+                            <ScenarioSelector basins={basins} scenarios={scenarios} onDataChange={handleDataChange} />
                         )}
-                        {activeTab === 'calculator' && (
-                            <RiskCalculator basins={basins} rainfall={rainfall} onDataChange={handleDataChange} />
+                        {activeTab === 'comparison' && (
+                            <BasinComparison basins={basins} scenarios={scenarios} matrix={matrix} />
+                        )}
+                        {activeTab === 'sensitivity' && (
+                            <SensitivityPanel basins={basins} scenarios={scenarios} />
+                        )}
+                        {activeTab === 'matrix' && (
+                            <ScenarioMatrix basins={basins} scenarios={scenarios} matrix={matrix} />
                         )}
                         {activeTab === 'results' && (
                             <ResultsPanel results={results} basins={basins} onRefresh={() => fetchResults().then(setResults)} />
@@ -110,9 +118,8 @@ export default function App() {
                 )}
             </main>
 
-            {/* Footer */}
             <footer className="footer">
-                <p>Flood Susceptibility Modeling System &bull; <span>Haskell + SQLite + Scotty</span> &bull; React.js Frontend &bull; MIT License</p>
+                <p>Flood Susceptibility Modeling System &bull; <span>Haskell + SQLite + Scotty</span> &bull; React.js Frontend &bull; Rational Method (Q=CiA) &bull; MIT License</p>
             </footer>
         </>
     );
