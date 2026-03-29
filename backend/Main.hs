@@ -66,6 +66,7 @@ main = do
             { corsOrigins = Just (["https://flood-susceptibility.vercel.app", "http://localhost:5173", "http://localhost:3000"], True)
             , corsMethods = ["GET", "POST", "OPTIONS"]
             , corsRequestHeaders = ["Content-Type"]
+            , corsMaxAge = Just 86400
             }
 
     scottyOpts opts $ do

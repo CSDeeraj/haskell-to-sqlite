@@ -18,6 +18,7 @@ RUN apt-get update --fix-missing -o Acquire::Retries=3 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY backend/haskell-to-sqlite.cabal ./
+COPY LICENSE ./
 RUN cabal update
 RUN cabal build --only-dependencies -j4
 

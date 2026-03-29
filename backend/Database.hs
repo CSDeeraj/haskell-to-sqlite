@@ -19,6 +19,9 @@ import           Types
 
 initializeDB :: Connection -> IO ()
 initializeDB conn = do
+    -- Enable WAL mode for better concurrent read/write
+    execute_ conn "PRAGMA journal_mode=WAL"
+
     execute_ conn
         "CREATE TABLE IF NOT EXISTS basins (\
         \id INTEGER PRIMARY KEY AUTOINCREMENT, \
@@ -57,11 +60,17 @@ insertBasin conn name_ city_ country_ elev slopeV areaV dd isr c_ mann toc =
 
 seedSampleData :: Connection -> IO ()
 seedSampleData conn = do
-    [Only count] <- query_ conn
+    [Only bCount] <- query_ conn
         "SELECT COUNT(*) FROM basins" :: IO [Only Int]
-    if count > 0
+    [Only sCount] <- query_ conn
+        "SELECT COUNT(*) FROM precipitation_scenarios" :: IO [Only Int]
+    if bCount >= 50 && sCount >= 5
         then putStrLn "[DB] Sample data already exists, skipping seed."
         else do
+            putStrLn "[DB] Clearing partial data..."
+            execute_ conn "DELETE FROM risk_results"
+            execute_ conn "DELETE FROM basins"
+            execute_ conn "DELETE FROM precipitation_scenarios"
             putStrLn "[DB] Inserting 50 urban sub-basins..."
 
             -- ============= INDIA (8 basins) =============
