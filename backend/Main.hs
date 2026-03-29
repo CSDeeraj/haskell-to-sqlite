@@ -8,7 +8,7 @@ import           Database.SQLite.Simple           (open)
 import           Network.Wai.Handler.Warp        (setPort, setHost, defaultSettings)
 import           Data.String                     (fromString)
 import           System.Environment              (lookupEnv)
-import           Network.Wai.Middleware.Cors     (simpleCors)
+import           Network.Wai.Middleware.Cors     (cors, corsOrigins, corsMethods, corsRequestHeaders, simpleCorsResourcePolicy, CorsResourcePolicy)
 import           Data.Maybe                      (fromMaybe)
 
 import           Database                        (initializeDB, seedSampleData)
@@ -62,7 +62,13 @@ main = do
     let warpSettings = setPort port $ setHost (fromString "0.0.0.0") defaultSettings
         opts = Options 1 warpSettings True
 
+    let corsPolicy = simpleCorsResourcePolicy
+            { corsOrigins = Just (["https://flood-susceptibility.vercel.app", "http://localhost:5173", "http://localhost:3000"], True)
+            , corsMethods = ["GET", "POST", "OPTIONS"]
+            , corsRequestHeaders = ["Content-Type"]
+            }
+
     scottyOpts opts $ do
-        middleware simpleCors
+        middleware $ cors (const $ Just corsPolicy)
         middleware $ staticPolicy (addBase "frontend/dist")
         app conn
