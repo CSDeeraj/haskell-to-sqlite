@@ -64,5 +64,5 @@ main = do
 
     scottyOpts opts $ do
         middleware simpleCors
-        middleware $ staticPolicy (addBase "frontend-react/dist")
+        middleware $ staticPolicy (addBase "frontend/dist")
         app conn

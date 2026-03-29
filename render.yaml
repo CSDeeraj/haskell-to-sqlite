@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: flood-susceptibility
+    env: docker
+    region: ohio
+    plan: free
+    branch: main
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 3000

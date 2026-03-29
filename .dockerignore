@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-newstyle
+.git
+.devcontainer
+README.md
+CHANGELOG.md
+render.yaml

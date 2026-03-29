@@ -1,25 +1,33 @@
-# Stage 1: Build the Haskell application
-FROM haskell:9.4 as builder
+# Stage 1: Build the React frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
 
-WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend ./
+RUN npm run build
+
+# Stage 2: Build the Haskell backend
+FROM haskell:9.4 AS backend-builder
+WORKDIR /app/backend
 
 # Install native dependencies for sqlite-simple
 RUN apt-get update && apt-get install -y libsqlite3-dev
 
 # Copy cabal file and resolve dependencies first (for docker layer caching)
-COPY haskell-to-sqlite.cabal ./
+COPY backend/haskell-to-sqlite.cabal ./
 RUN cabal update
 RUN cabal build --only-dependencies -j4
 
-# Copy all source files
-COPY . .
+# Copy all backend source files
+COPY backend ./
 
 # Build and install the binary to a predictable location
 RUN cabal install --installdir=/app/bin --install-method=copy
 
-# Stage 2: Create the lightweight runtime image
+# Stage 3: Create the lightweight runtime image
 FROM debian:bullseye-slim
-
 WORKDIR /app
 
 # Install runtime dependencies
@@ -28,14 +36,16 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled executable from the builder stage
-COPY --from=builder /app/bin/flood-susceptibility /app/flood-susceptibility
+# Copy the compiled executable from the backend builder stage
+COPY --from=backend-builder /app/bin/flood-susceptibility /app/flood-susceptibility
 
-# Copy the SQLite database
-# Note: Ensure flood_susceptibility.db is in the project root
+# Copy the SQLite database from the project root
 COPY flood_susceptibility.db /app/
 
-# Set the port (Render will use $PORT, this is for local reference)
+# Copy the built frontend artifacts from the frontend builder stage
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+
+# Render will use $PORT, default is 3000
 EXPOSE 3000
 
 # Run the backend

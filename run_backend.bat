@@ -1,4 +1,4 @@
 @echo off
 echo Starting Haskell Backend...
-cabal run
+cabal run --project-dir=backend
 pause
