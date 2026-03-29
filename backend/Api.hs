@@ -3,7 +3,7 @@
 module Api (app) where
 
 import           Web.Scotty
-import           Data.Aeson              (Value, object, (.=), toJSON)
+import           Data.Aeson              (Value, object, (.=))
 import qualified Data.Text.Lazy          as TL
 import qualified Data.Text               as T
 import           Database.SQLite.Simple  (Connection)
@@ -98,9 +98,6 @@ app conn = do
 
         case basins of
             (b:_) -> do
-                now <- liftIO getCurrentTime
-                let timestamp = TL.pack $ formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" now
-
                 let results = map (\s ->
                         let si   = computeSI b s
                             risk = classifyRisk b s

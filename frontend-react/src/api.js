@@ -2,7 +2,7 @@
 // Centralized API client for Flood Susceptibility Modeling
 // ============================================================
 
-const API_BASE = '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function fetchBasins() {
     const res = await fetch(`${API_BASE}/api/basins`);

@@ -140,22 +140,22 @@ export default function ScenarioSelector({ basins, scenarios, onDataChange }) {
                 <div className="panel">
                     <div className="panel-header"><h2>🌊 Classification Results — {scenarioInfo?.scenarioName}</h2></div>
                     <div className="panel-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             {allResults.map((r, i) => {
                                 const fillPct = Math.round((r.siScore || 0) * 100);
                                 return (
                                     <div key={i} className="water-fill-card" style={{ '--fill-height': `${fillPct}%` }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '.8rem' }}>
                                             <div>
-                                                <div className="basin-name" style={{ fontSize: '.82rem' }}>{r.basinName}</div>
-                                                <div style={{ fontSize: '.68rem', color: 'var(--text-muted)' }}>{r.city}</div>
+                                                <div className="basin-name" style={{ fontSize: '1.15rem', fontWeight: 800 }}>{r.basinName}</div>
+                                                <div style={{ fontSize: '.9rem', color: 'var(--text-muted)', marginTop: '.2rem' }}>{r.city}</div>
                                             </div>
-                                            <span className={`risk-badge ${riskClass(r.riskLevel)}`}>{r.riskLevel}</span>
+                                            <span className={`risk-badge ${riskClass(r.riskLevel)}`} style={{ fontSize: '.85rem', padding: '.4rem .8rem' }}>{r.riskLevel}</span>
                                         </div>
-                                        <div className="si-score font-data" style={{ color: RISK_COLORS[r.riskLevel] || '#94a3b8', fontSize: '1.6rem' }}>
+                                        <div className="si-score font-data" style={{ color: RISK_COLORS[r.riskLevel] || '#94a3b8', fontSize: '2.4rem' }}>
                                             {r.siScore?.toFixed(3)}
                                         </div>
-                                        <div className="si-label">Susceptibility Index</div>
+                                        <div className="si-label" style={{ fontSize: '.85rem', fontWeight: 700, marginTop: '.4rem' }}>Susceptibility Index</div>
                                     </div>
                                 );
                             })}

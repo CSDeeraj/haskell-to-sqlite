@@ -57,7 +57,7 @@ export default function ResultsPanel({ results, basins, onRefresh }) {
                                                 {r.riskLevel}
                                             </span>
                                         </td>
-                                        <td style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>{r.calculatedAt}</td>
+                                        <td style={{ fontSize: '.9rem', color: 'var(--text-muted)' }}>{r.calculatedAt}</td>
                                     </tr>
                                 );
                             })}

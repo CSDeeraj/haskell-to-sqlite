@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const RISK_COLORS = {
-    Low: '#22c55e', Moderate: '#eab308', High: '#f97316', Severe: '#dc2626', Unknown: '#64748b',
+    Low: '#00e5ff', Moderate: '#39ff14', High: '#ffea00', Severe: '#ff0055', Unknown: '#475569',
 };
 
 const FALLBACK_DATA = [
@@ -51,6 +51,7 @@ export default function FloodMap({ matrix }) {
 
     return (
         <div className="tab-content">
+            <style>{`.blue-dark-map { filter: hue-rotate(210deg) sepia(60%) saturate(300%) contrast(120%) brightness(70%); }`}</style>
             <div className="map-layout">
                 <div className="map-sidebar">
                     <div className="map-panel">
@@ -113,10 +114,11 @@ export default function FloodMap({ matrix }) {
                 </div>
 
                 <div className="map-container-wrapper">
-                    <MapContainer center={[20, 40]} zoom={2} className="flood-map" style={{ height: '100%', minHeight: '600px' }}>
+                    <MapContainer center={[20, 40]} zoom={2} className="flood-map" style={{ height: '100%', minHeight: '600px', background: '#090a0f' }}>
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com">CARTO</a>'
                             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                            className="blue-dark-map"
                         />
                         {filtered.map(basin => (
                             <CircleMarker
@@ -130,6 +132,11 @@ export default function FloodMap({ matrix }) {
                                 }}
                                 eventHandlers={{ click: () => setSelectedBasin(basin) }}
                             >
+                                <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
+                                    <div style={{ fontWeight: 'bold', textShadow: '0 0 4px white', color: '#1e293b' }}>
+                                        {basin.city} <br/> SI: {basin.siScore?.toFixed(2)}
+                                    </div>
+                                </Tooltip>
                                 <Popup>
                                     <div className="map-popup-content">
                                         <div className="map-popup-title">{basin.basinName}</div>

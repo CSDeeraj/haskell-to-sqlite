@@ -7,6 +7,9 @@ import           Network.Wai.Middleware.Static    (staticPolicy, addBase)
 import           Database.SQLite.Simple           (open)
 import           Network.Wai.Handler.Warp        (setPort, setHost, defaultSettings)
 import           Data.String                     (fromString)
+import           System.Environment              (lookupEnv)
+import           Network.Wai.Middleware.Cors     (simpleCors)
+import           Data.Maybe                      (fromMaybe)
 
 import           Database                        (initializeDB, seedSampleData)
 import           Api                             (app)
@@ -40,8 +43,11 @@ main = do
     putStrLn "[DB] Seeding sample data..."
     seedSampleData conn
 
+    portStr <- lookupEnv "PORT"
+    let port = read (fromMaybe "3000" portStr) :: Int
+
     putStrLn ""
-    putStrLn "[SERVER] Starting on http://0.0.0.0:3000"
+    putStrLn $ "[SERVER] Starting on http://0.0.0.0:" ++ show port
     putStrLn "[SERVER] Frontend available at http://localhost:3000/index.html"
     putStrLn "[SERVER] API endpoints:"
     putStrLn "  GET  /api/basins             - All sub-basins with parameters"
@@ -53,9 +59,10 @@ main = do
     putStrLn "  GET  /api/scenario-matrix    - Full basin x scenario matrix"
     putStrLn ""
 
-    let warpSettings = setPort 3000 $ setHost (fromString "0.0.0.0") defaultSettings
+    let warpSettings = setPort port $ setHost (fromString "0.0.0.0") defaultSettings
         opts = Options 1 warpSettings True
 
     scottyOpts opts $ do
+        middleware simpleCors
         middleware $ staticPolicy (addBase "frontend-react/dist")
         app conn

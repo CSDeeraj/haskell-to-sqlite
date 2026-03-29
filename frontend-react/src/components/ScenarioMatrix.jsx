@@ -20,7 +20,7 @@ export default function ScenarioMatrix({ basins, scenarios, matrix }) {
                                 {scenarios.map(s => (
                                     <th key={s.scenarioId} style={{ minWidth: '130px' }}>
                                         <div>{s.scenarioName}</div>
-                                        <div style={{ fontSize: '.58rem', fontWeight: 400, color: 'var(--text-muted)', textTransform: 'none' }}>
+                                        <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'none', marginTop: '.3rem' }}>
                                             {s.intensityMm} mm/hr · {s.returnPeriod}-yr
                                         </div>
                                     </th>
@@ -33,8 +33,8 @@ export default function ScenarioMatrix({ basins, scenarios, matrix }) {
                                 return (
                                     <tr key={basin.basinId}>
                                         <td>
-                                            <div className="basin-name">{basin.basinName}</div>
-                                            <div style={{ fontSize: '.65rem', color: 'var(--text-muted)' }}>
+                                            <div className="basin-name" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{basin.basinName}</div>
+                                            <div style={{ fontSize: '.9rem', color: 'var(--text-muted)', marginTop: '.2rem' }}>
                                                 {basin.city}, {basin.country}
                                             </div>
                                         </td>
@@ -47,7 +47,7 @@ export default function ScenarioMatrix({ basins, scenarios, matrix }) {
                                                         <span className={`risk-badge ${riskClass(match.riskLevel)}`}>
                                                             {match.riskLevel}
                                                         </span>
-                                                        <span className="matrix-si font-data">
+                                                        <span className="matrix-si font-data" style={{ fontSize: '.9rem', fontWeight: 700 }}>
                                                             SI: {match.siScore?.toFixed(3)}
                                                         </span>
                                                     </div>
