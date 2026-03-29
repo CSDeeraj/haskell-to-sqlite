@@ -1,5 +1,5 @@
 # Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
@@ -39,8 +39,6 @@ RUN apt-get update && apt-get install -y \
 # Copy the compiled executable from the backend builder stage
 COPY --from=backend-builder /app/bin/flood-susceptibility /app/flood-susceptibility
 
-# Copy the SQLite database from the project root
-COPY flood_susceptibility.db /app/
 
 # Copy the built frontend artifacts from the frontend builder stage
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
