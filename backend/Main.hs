@@ -8,7 +8,7 @@ import           Database.SQLite.Simple           (open)
 import           Network.Wai.Handler.Warp        (setPort, setHost, defaultSettings)
 import           Data.String                     (fromString)
 import           System.Environment              (lookupEnv)
-import           Network.Wai.Middleware.Cors     (cors, corsOrigins, corsMethods, corsRequestHeaders, simpleCorsResourcePolicy, CorsResourcePolicy)
+import           Network.Wai.Middleware.Cors     (cors, corsOrigins, corsMethods, corsRequestHeaders, corsMaxAge, simpleCorsResourcePolicy, CorsResourcePolicy)
 import           Data.Maybe                      (fromMaybe)
 
 import           Database                        (initializeDB, seedSampleData)
