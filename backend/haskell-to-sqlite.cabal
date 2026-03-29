@@ -11,7 +11,6 @@ author:             C S Deeraj
 maintainer:         csdeeraj@gmail.com
 category:           Database
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
 
 common warnings
     ghc-options: -Wall
